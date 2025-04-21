@@ -28,8 +28,10 @@ pipeline {
                 docker { image 'node:14' }
             }
             steps {
-                sh 'mkdir -p .npm_cache' // Create a cache directory in the workspace
-                sh 'npm config set cache .npm_cache' // Set npm cache to workspace directory
+                sh 'mkdir -p .npm_cache' // Create cache directory in workspace
+                sh 'mkdir -p .npm_config' // Create config directory in workspace
+                sh 'npm config set cache .npm_cache' // Set npm cache
+                sh 'npm config set userconfig .npm_config/.npmrc' // Set user-specific npm config
                 sh 'npm install' // Install dependencies
                 sh 'npm test' // Run tests
             }
