@@ -13,7 +13,7 @@ pipeline {
             agent {
                 docker {
                     image 'docker:20.10'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount Docker socket
+                    args '-v /var/run/docker.sock:/var/run/docker.sock --group-add 999' // Mount Docker socket and add docker group
                 }
             }
             steps {
@@ -37,7 +37,7 @@ pipeline {
             agent {
                 docker {
                     image 'docker:20.10'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount Docker socket
+                    args '-v /var/run/docker.sock:/var/run/docker.sock --group-add 999' // Mount Docker socket and add docker group
                 }
             }
             steps {
