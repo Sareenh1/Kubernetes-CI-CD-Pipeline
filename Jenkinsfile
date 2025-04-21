@@ -25,11 +25,13 @@ pipeline {
         
         stage('Test') {
             agent {
-                docker { image 'node:14' } // Use Node.js image for testing
+                docker { image 'node:14' }
             }
             steps {
-                sh 'npm install' // Install dependencies before running tests
-                sh 'npm test'
+                sh 'mkdir -p .npm_cache' // Create a cache directory in the workspace
+                sh 'npm config set cache .npm_cache' // Set npm cache to workspace directory
+                sh 'npm install' // Install dependencies
+                sh 'npm test' // Run tests
             }
         }
         
