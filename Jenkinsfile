@@ -1,11 +1,6 @@
 pipeline {
     agent none // No default agent; specify per stage
     
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        KUBECONFIG = credentials('kubeconfig')
-    }
-    
     stages {
         stage('Checkout') {
             agent any
@@ -40,26 +35,32 @@ pipeline {
                 docker { image 'docker:20.10' }
             }
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        docker.image("sareen/sample-app:${env.BUILD_ID}").push()
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_CREDENTIALS_USR', passwordVariable: 'DOCKERHUB_CREDENTIALS_PSW')]) {
+                    script {
+                        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                            docker.image("sareen/sample-app:${env.BUILD_ID}").push()
+                        }
                     }
                 }
             }
         }
         
         stage('Deploy to Kubernetes') {
-            agent any
+            agent {
+                docker { image 'bitnami/kubectl:latest' }
+            }
             steps {
-                script {
-                    // Update the deployment with the new image
-                    sh "sed -i 's|sareen/sample-app:latest|sareen/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
-                    
-                    // Apply the deployment
-                    sh "kubectl apply -f k8s-deployment.yaml"
-                    
-                    // Verify deployment
-                    sh "kubectl rollout status deployment/sample-app"
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    script {
+                        // Update the deployment with the new image
+                        sh "sed -i 's|sareen/sample-app:latest|sareen/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
+                        
+                        // Apply the deployment
+                        sh "kubectl apply -f k8s-deployment.yaml"
+                        
+                        // Verify deployment
+                        sh "kubectl rollout status deployment/sample-app"
+                    }
                 }
             }
         }
