@@ -11,7 +11,10 @@ pipeline {
         
         stage('Build') {
             agent {
-                docker { image 'docker:20.10' } // Use Docker image for building
+                docker {
+                    image 'docker:20.10'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount Docker socket
+                }
             }
             steps {
                 script {
@@ -32,7 +35,10 @@ pipeline {
         
         stage('Push to Docker Hub') {
             agent {
-                docker { image 'docker:20.10' }
+                docker {
+                    image 'docker:20.10'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount Docker socket
+                }
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_CREDENTIALS_USR', passwordVariable: 'DOCKERHUB_CREDENTIALS_PSW')]) {
