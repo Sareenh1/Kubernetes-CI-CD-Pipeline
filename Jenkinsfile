@@ -52,13 +52,4 @@ pipeline {
             }
         }
     }
-    
-    post {
-        success {
-            slackSend(color: "good", message: "Pipeline SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'")
-        }
-        failure {
-            slackSend(color: "danger", message: "Pipeline FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'")
-        }
-    }
 }
