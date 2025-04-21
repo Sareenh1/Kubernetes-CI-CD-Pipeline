@@ -1,32 +1,81 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sample-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: sample-app
-  template:
-    metadata:
-      labels:
-        app: sample-app
-    spec:
-      containers:
-      - name: sample-app
-        image: sareen/sample-app:latest
-        ports:
-        - containerPort: 3000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sample-app
-spec:
-  selector:
-    app: sample-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 3000
-  type: ClusterIP
+pipeline {
+    agent none // No default agent; specify per stage
+    
+    stages {
+        stage('Checkout') {
+            agent any
+            steps {
+                git branch: 'main', url: 'https://github.com/Sareenh1/Kubernetes-CI-CD-Pipeline.git'
+            }
+        }
+        
+        stage('Build') {
+            agent {
+                docker {
+                    image 'docker:20.10'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u root' // Run as root
+                }
+            }
+            steps {
+                script {
+                    docker.build("sareen/sample-app:${env.BUILD_ID}")
+                }
+            }
+        }
+        
+        stage('Test') {
+            agent {
+                docker {
+                    image 'node:14'
+                    args '-e NPM_CONFIG_CACHE=.npm_cache -e NPM_CONFIG_USERCONFIG=.npm_config/.npmrc' // Set npm config via env vars
+                }
+            }
+            steps {
+                sh 'mkdir -p .npm_cache .npm_config' // Create cache and config directories
+                sh 'npm install' // Install dependencies
+                sh 'npm test' // Run tests
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            agent {
+                docker {
+                    image 'docker:20.10'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u root' // Run as root
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_CREDENTIALS_USR', passwordVariable: 'DOCKERHUB_CREDENTIALS_PSW')]) {
+                    script {
+                        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                            docker.image("sareen/sample-app:${env.BUILD_ID}").push()
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            agent {
+                docker {
+                    image 'bitnami/kubectl:latest'
+                    args '--entrypoint=""' // Disable ENTRYPOINT
+                }
+            }
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    script {
+                        // Update the deployment with the new image
+                        sh "sed -i 's|sareen/sample-app:latest|sareen/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
+                        
+                        // Apply the deployment
+                        sh "kubectl apply -f k8s-deployment.yaml"
+                        
+                        // Verify deployment
+                        sh "kubectl rollout status deployment/sample-app"
+                    }
+                }
+            }
+        }
+    }
+}
