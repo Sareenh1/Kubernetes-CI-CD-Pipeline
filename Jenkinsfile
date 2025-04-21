@@ -1,4 +1,3 @@
-```groovy
 pipeline {
     agent none // No default agent; specify per stage
     
