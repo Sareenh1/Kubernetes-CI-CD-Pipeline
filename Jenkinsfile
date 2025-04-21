@@ -25,13 +25,13 @@ pipeline {
         
         stage('Test') {
             agent {
-                docker { image 'node:14' }
+                docker {
+                    image 'node:14'
+                    args '-e NPM_CONFIG_CACHE=.npm_cache -e NPM_CONFIG_USERCONFIG=.npm_config/.npmrc' // Set npm config via env vars
+                }
             }
             steps {
-                sh 'mkdir -p .npm_cache' // Create cache directory in workspace
-                sh 'mkdir -p .npm_config' // Create config directory in workspace
-                sh 'npm config set cache .npm_cache' // Set npm cache
-                sh 'npm config set userconfig .npm_config/.npmrc' // Set user-specific npm config
+                sh 'mkdir -p .npm_cache .npm_config' // Create cache and config directories
                 sh 'npm install' // Install dependencies
                 sh 'npm test' // Run tests
             }
