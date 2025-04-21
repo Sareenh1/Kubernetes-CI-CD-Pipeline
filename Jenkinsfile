@@ -16,7 +16,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    docker.build("your-dockerhub-username/sample-app:${env.BUILD_ID}")
+                    docker.build("sareen/sample-app:${env.BUILD_ID}")
                 }
             }
         }
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        docker.image("your-dockerhub-username/sample-app:${env.BUILD_ID}").push()
+                        docker.image("sareen/sample-app:${env.BUILD_ID}").push()
                     }
                 }
             }
@@ -41,7 +41,7 @@ pipeline {
             steps {
                 script {
                     // Update the deployment with the new image
-                    sh "sed -i 's|<your-dockerhub-username>/sample-app:latest|your-dockerhub-username/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
+                    sh "sed -i 's|sareen/sample-app:latest|sareen/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
                     
                     // Apply the deployment
                     sh "kubectl apply -f k8s-deployment.yaml"
