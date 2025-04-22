@@ -66,7 +66,7 @@ pipeline {
                         sh "sed -i 's|sareen/sample-app:latest|sareen/sample-app:${env.BUILD_ID}|g' k8s-deployment.yaml"
                         
                         // Apply the deployment
-                        sh "kubectl apply -f k8s-deployment.yaml"
+                        sh "kubectl apply -f k8s-deployment.yml"
                         
                         // Verify deployment
                         sh "kubectl rollout status deployment/sample-app"
